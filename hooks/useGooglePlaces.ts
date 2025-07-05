@@ -37,6 +37,13 @@ export function useGooglePlaces() {
         return;
       }
 
+      // Check if script already exists to prevent multiple loading
+      const existingScript = document.querySelector(`script[src*="maps.googleapis.com/maps/api/js"]`);
+      if (existingScript) {
+        setIsGoogleMapsLoaded(true);
+        return;
+      }
+
       const script = document.createElement('script');
       script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
       script.async = true;
