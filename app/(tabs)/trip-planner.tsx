@@ -187,7 +187,7 @@ export default function TripPlannerScreen() {
               styles.autocompleteContainer,
               styles.sourceContainer,
             ]}
-            zIndex={focusedInput === 'source' ? 2000 : 1000}
+            zIndex={focusedInput === 'source' ? 99999 : 10000}
             onFocus={handleSourceFocus}
             onBlur={handleSourceBlur}
           />
@@ -202,7 +202,7 @@ export default function TripPlannerScreen() {
               styles.autocompleteContainer,
               styles.destinationContainer,
             ]}
-            zIndex={focusedInput === 'destination' ? 2000 : 1000}
+            zIndex={focusedInput === 'destination' ? 99999 : 10000}
             onFocus={handleDestinationFocus}
             onBlur={handleDestinationBlur}
           />
@@ -300,14 +300,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8F9FA',
+    // Ensure autocomplete can overlay
+    overflow: 'visible',
   },
   scrollView: {
     flex: 1,
+    // Ensure autocomplete can overlay
+    overflow: 'visible',
   },
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 40,
+    // Ensure autocomplete can overlay
+    overflow: 'visible',
   },
   header: {
     alignItems: 'center',
@@ -326,6 +332,8 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     marginBottom: 30,
+    position: 'relative',
+    zIndex: 1000,
   },
   autocompleteContainer: {
     marginBottom: 16,
@@ -373,6 +381,8 @@ const styles = StyleSheet.create({
   },
   resultsContainer: {
     marginBottom: 30,
+    position: 'relative',
+    zIndex: 0,
   },
   resultsTitle: {
     fontSize: 20,
@@ -497,6 +507,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
+    position: 'relative',
+    zIndex: -1,
   },
   infoTitle: {
     fontSize: 16,

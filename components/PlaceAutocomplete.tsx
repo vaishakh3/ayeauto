@@ -256,6 +256,8 @@ const styles = StyleSheet.create({
     color: '#333333',
     paddingVertical: 16,
     paddingLeft: 12,
+    outlineWidth: 0,
+    borderWidth: 0,
   },
   loader: {
     marginLeft: 8,
