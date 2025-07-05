@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "Aye Auto",
+    "slug": "aye-auto",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/image.png",
+    "scheme": "myapp",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/images/image.png"
+    },
+    "plugins": [
+      "expo-router", 
+      "expo-font", 
+      "expo-web-browser",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/aye auto.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#FFD700"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
