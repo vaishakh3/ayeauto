@@ -84,12 +84,19 @@ export default function SettingsScreen() {
             try {
               await AsyncStorage.setItem('fareSettings', JSON.stringify(DEFAULT_SETTINGS));
               
-              // Update both settings and temp settings simultaneously
-              setSettings({ ...DEFAULT_SETTINGS });
-              setTempSettings({ ...DEFAULT_SETTINGS });
+              // Create completely new objects to ensure React detects the change
+              const newSettings = {
+                baseFare: DEFAULT_SETTINGS.baseFare,
+                baseDistance: DEFAULT_SETTINGS.baseDistance,
+                ratePerKm: DEFAULT_SETTINGS.ratePerKm,
+              };
               
-              // Explicitly set hasChanges to false since we just reset everything
-              setHasChanges(false);
+              setSettings(newSettings);
+              setTempSettings({
+                baseFare: DEFAULT_SETTINGS.baseFare,
+                baseDistance: DEFAULT_SETTINGS.baseDistance,
+                ratePerKm: DEFAULT_SETTINGS.ratePerKm,
+              });
               
               Alert.alert('Success', 'Settings reset to Kerala defaults!');
             } catch (error) {
