@@ -63,7 +63,6 @@ export default function SettingsScreen() {
 
       await AsyncStorage.setItem('fareSettings', JSON.stringify(tempSettings));
       setSettings(tempSettings);
-      setHasChanges(false);
       Alert.alert('Success', 'Settings saved successfully!');
     } catch (error) {
       console.error('Error saving settings:', error);
@@ -84,19 +83,8 @@ export default function SettingsScreen() {
             try {
               await AsyncStorage.setItem('fareSettings', JSON.stringify(DEFAULT_SETTINGS));
               
-              // Create completely new objects to ensure React detects the change
-              const newSettings = {
-                baseFare: DEFAULT_SETTINGS.baseFare,
-                baseDistance: DEFAULT_SETTINGS.baseDistance,
-                ratePerKm: DEFAULT_SETTINGS.ratePerKm,
-              };
-              
-              setSettings(newSettings);
-              setTempSettings({
-                baseFare: DEFAULT_SETTINGS.baseFare,
-                baseDistance: DEFAULT_SETTINGS.baseDistance,
-                ratePerKm: DEFAULT_SETTINGS.ratePerKm,
-              });
+              // Force reload settings from storage to ensure consistency
+              await loadSettings();
               
               Alert.alert('Success', 'Settings reset to Kerala defaults!');
             } catch (error) {
