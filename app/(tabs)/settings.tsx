@@ -82,9 +82,12 @@ export default function SettingsScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
+              // First update the temporary settings to show immediate UI changes
+              setTempSettings(DEFAULT_SETTINGS);
+              
+              // Then save to storage and update the actual settings
               await AsyncStorage.setItem('fareSettings', JSON.stringify(DEFAULT_SETTINGS));
               setSettings(DEFAULT_SETTINGS);
-              setTempSettings(DEFAULT_SETTINGS);
               Alert.alert('Success', 'Settings reset to Kerala defaults!');
             } catch (error) {
               console.error('Error resetting settings:', error);
