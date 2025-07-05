@@ -72,29 +72,28 @@ export default function SettingsScreen() {
   };
 
   const resetToDefaults = () => {
-    Alert.alert(
-      'Reset to Defaults',
-      'Are you sure you want to reset all settings to Kerala defaults?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Reset',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await AsyncStorage.setItem('fareSettings', JSON.stringify(DEFAULT_SETTINGS));
-              setSettings(DEFAULT_SETTINGS);
-              setTempSettings(DEFAULT_SETTINGS);
-              setHasChanges(false);
-              Alert.alert('Success', 'Settings reset to Kerala defaults!');
-            } catch (error) {
-              console.error('Error resetting settings:', error);
-              Alert.alert('Error', 'Failed to reset settings');
-            }
-          },
-        },
-      ]
-    );
+    console.log('Reset button clicked');
+    // Use browser confirm for web compatibility
+    const confirmed = confirm('Are you sure you want to reset all settings to Kerala defaults?');
+    if (confirmed) {
+      console.log('Reset confirmed, executing reset...');
+      performReset();
+    }
+  };
+
+  const performReset = async () => {
+    try {
+      console.log('Performing reset to defaults:', DEFAULT_SETTINGS);
+      await AsyncStorage.setItem('fareSettings', JSON.stringify(DEFAULT_SETTINGS));
+      setSettings({ ...DEFAULT_SETTINGS });
+      setTempSettings({ ...DEFAULT_SETTINGS });
+      setHasChanges(false);
+      console.log('Reset completed successfully');
+      Alert.alert('Success', 'Settings reset to Kerala defaults!');
+    } catch (error) {
+      console.error('Error resetting settings:', error);
+      Alert.alert('Error', 'Failed to reset settings');
+    }
   };
 
   const updateBaseFare = (value: string) => {
@@ -240,6 +239,7 @@ export default function SettingsScreen() {
         <TouchableOpacity 
           style={styles.secondaryButton} 
           onPress={resetToDefaults}
+          activeOpacity={0.8}
         >
           <RotateCcw size={18} color="#FF6B35" />
           <Text style={styles.secondaryButtonText}>Reset to Kerala Defaults</Text>

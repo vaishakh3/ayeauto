@@ -17,8 +17,8 @@
       "favicon": "./assets/images/image.png"
     },
     "plugins": [
-      "expo-router", 
-      "expo-font", 
+      "expo-router",
+      "expo-font",
       "expo-web-browser",
       [
         "expo-splash-screen",
@@ -32,6 +32,15 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "637c969d-afe1-4241-8166-b40b55e7acd3"
+      }
+    },
+    "android": {
+      "package": "com.soulcastor.ayeauto"
     }
   }
 }

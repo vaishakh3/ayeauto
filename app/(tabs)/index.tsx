@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput } from 'react-native';
 import { useState, useEffect } from 'react';
 import { Play, Square, RotateCcw } from 'lucide-react-native';
 import * as Location from 'expo-location';
@@ -23,6 +23,8 @@ export default function MeterScreen() {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [hasPermission, setHasPermission] = useState(false);
   const [fareSettings, setFareSettings] = useState<FareSettings>(DEFAULT_SETTINGS);
+  const [manualDistance, setManualDistance] = useState('');
+  const [showManualInput, setShowManualInput] = useState(false);
   
   const { 
     distance, 
@@ -40,8 +42,9 @@ export default function MeterScreen() {
   } = useLocationTracking();
 
   useEffect(() => {
-    requestLocationPermission();
     loadFareSettings();
+    // Don't automatically request location on app start
+    // Let user trigger it by clicking Start Meter
   }, []);
 
   const loadFareSettings = async () => {
@@ -65,7 +68,7 @@ export default function MeterScreen() {
   }, []);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval>;
     if (isRunning) {
       interval = setInterval(() => {
         setElapsedTime(prev => prev + 1);
@@ -82,30 +85,155 @@ export default function MeterScreen() {
 
   const requestLocationPermission = async () => {
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      setHasPermission(status === 'granted');
+      // Check if we're in a PWA (standalone mode)
+      const isPWA = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches;
       
-      if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Location permission is required for the meter to work properly.');
+      if (isPWA) {
+        // For PWA mode, we need to request permission more explicitly
+        if ('geolocation' in navigator) {
+          // Try to get location first, which will trigger permission request
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              console.log('PWA location permission granted');
+              setHasPermission(true);
+            },
+            (error) => {
+              console.error('PWA location permission denied:', error);
+              setHasPermission(false);
+              Alert.alert(
+                'Location Permission Required', 
+                'Please enable location access in your browser settings for this app to work properly. You may need to reload the app after enabling location.'
+              );
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+          );
+        } else {
+          setHasPermission(false);
+          Alert.alert('Location Not Supported', 'Your device does not support location services.');
+        }
+      } else {
+        // Regular Safari - use Expo Location
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        setHasPermission(status === 'granted');
+        
+        if (status !== 'granted') {
+          Alert.alert('Permission Denied', 'Location permission is required for the meter to work properly.');
+        }
       }
     } catch (error) {
       console.error('Error requesting location permission:', error);
+      setHasPermission(false);
     }
   };
 
   const handleStartMeter = async () => {
-    if (!hasPermission) {
-      Alert.alert('Permission Required', 'Please enable location permissions to use the meter.');
+    console.log('Start meter clicked');
+    
+    // Check if we're in PWA mode
+    const isPWA = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches;
+    console.log('Is PWA:', isPWA);
+    
+    // For PWA mode, offer manual distance input as primary option
+    if (isPWA) {
+      Alert.alert(
+        'Choose Meter Mode',
+        'PWAs have limited location access. Choose how you want to track your trip:',
+        [
+          { 
+            text: 'Manual Distance', 
+            onPress: () => {
+              setShowManualInput(true);
+              setIsRunning(true);
+            }
+          },
+          { 
+            text: 'Try Location', 
+            onPress: () => attemptLocationAccess()
+          },
+          { text: 'Cancel', style: 'cancel' }
+        ]
+      );
       return;
     }
     
-    setIsRunning(true);
-    await startTracking();
+    // For Safari, try location directly
+    attemptLocationAccess();
+  };
+
+  const attemptLocationAccess = async () => {
+    try {
+      if (typeof window !== 'undefined' && 'geolocation' in navigator) {
+        console.log('Requesting location permission...');
+        
+        // Try to request permission first
+        if ('permissions' in navigator) {
+          try {
+            const permission = await navigator.permissions.query({name: 'geolocation'});
+            console.log('Permission state:', permission.state);
+            
+            if (permission.state === 'denied') {
+              Alert.alert(
+                'Location Access Blocked',
+                'Location access has been blocked. Would you like to use manual distance input instead?',
+                [
+                  { text: 'Manual Mode', onPress: () => {
+                    setShowManualInput(true);
+                    setIsRunning(true);
+                  }},
+                  { text: 'Cancel', style: 'cancel' }
+                ]
+              );
+              return;
+            }
+          } catch (permError) {
+            console.log('Permission query failed:', permError);
+          }
+        }
+        
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            console.log('Location permission granted:', position);
+            setHasPermission(true);
+            setIsRunning(true);
+            startTracking();
+          },
+          (error) => {
+            console.error('Location error:', error);
+            Alert.alert(
+              'Location Unavailable',
+              'Unable to access location. Would you like to use manual distance input instead?',
+              [
+                { text: 'Manual Mode', onPress: () => {
+                  setShowManualInput(true);
+                  setIsRunning(true);
+                }},
+                { text: 'Cancel', style: 'cancel' }
+              ]
+            );
+          },
+          { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+        );
+      } else {
+        // Fallback to Expo Location for native
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          setHasPermission(true);
+          setIsRunning(true);
+          await startTracking();
+        } else {
+          Alert.alert('Permission Required', 'Please enable location permissions to use the meter.');
+        }
+      }
+    } catch (error) {
+      console.error('Error requesting location:', error);
+      Alert.alert('Error', 'Failed to access location. Please try again.');
+    }
   };
 
   const handleStopMeter = async () => {
     setIsRunning(false);
     await stopTracking();
+    setShowManualInput(false);
   };
 
   const handleResetMeter = () => {
@@ -113,6 +241,14 @@ export default function MeterScreen() {
     setElapsedTime(0);
     resetMeter();
     stopTracking();
+    setShowManualInput(false);
+    setManualDistance('');
+  };
+
+  const handleManualDistanceChange = (value: string) => {
+    setManualDistance(value);
+    const numValue = parseFloat(value) || 0;
+    updateDistance(numValue);
   };
 
   const formatTime = (seconds: number) => {
@@ -137,7 +273,18 @@ export default function MeterScreen() {
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>Distance</Text>
-            <Text style={styles.statValue}>{distance.toFixed(2)} km</Text>
+            {showManualInput ? (
+              <TextInput
+                style={styles.manualInput}
+                value={manualDistance}
+                onChangeText={handleManualDistanceChange}
+                placeholder="0.0"
+                keyboardType="decimal-pad"
+                autoFocus={true}
+              />
+            ) : (
+              <Text style={styles.statValue}>{distance.toFixed(2)} km</Text>
+            )}
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>Time</Text>
@@ -153,7 +300,9 @@ export default function MeterScreen() {
             onPress={handleStartMeter}
           >
             <Play size={24} color="#FFFFFF" />
-            <Text style={styles.buttonText}>Start Meter</Text>
+            <Text style={styles.buttonText}>
+              {hasPermission ? 'Start Meter' : 'Start Meter (Enable Location)'}
+            </Text>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity 
@@ -182,6 +331,14 @@ export default function MeterScreen() {
         {isNight && (
           <Text style={[styles.rateText, styles.nightIndicator]}>
             🌙 Night rate active
+          </Text>
+        )}
+        {!hasPermission && (
+          <Text style={[styles.rateText, styles.locationNote]}>
+            📍 Click "Start Meter" to enable location tracking
+            {window.matchMedia && window.matchMedia('(display-mode: standalone)').matches && 
+              '\n💡 PWA Tip: If location doesn\'t work, try opening in Safari first'
+            }
           </Text>
         )}
       </View>
@@ -331,5 +488,20 @@ const styles = StyleSheet.create({
     color: '#FF6B35',
     fontFamily: 'Inter-SemiBold',
     marginTop: 4,
+  },
+  locationNote: {
+    color: '#2196F3',
+    fontFamily: 'Inter-SemiBold',
+    marginTop: 4,
+  },
+  manualInput: {
+    fontSize: 18,
+    fontFamily: 'Inter-Bold',
+    color: '#1565C0',
+    textAlign: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#FF6B35',
+    paddingVertical: 4,
+    minWidth: 60,
   },
 });
