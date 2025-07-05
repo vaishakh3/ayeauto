@@ -1,5 +1,6 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, TextInput } from 'react-native';
 import { useState, useCallback, useEffect } from 'react';
+import { Platform } from 'react-native';
 import { Search, MapPin, Navigation, Clock } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFareCalculator, isNightTime } from '@/hooks/useFareCalculator';
@@ -27,6 +28,7 @@ export default function TripPlannerScreen() {
   const [focusedInput, setFocusedInput] = useState<'source' | 'destination' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [fareSettings, setFareSettings] = useState<FareSettings>(DEFAULT_SETTINGS);
+  const [manualDistance, setManualDistance] = useState('');
   
   const { calculateFareForDistance } = useFareCalculator();
   const { calculateDistanceAndTime } = useGooglePlaces();
@@ -104,6 +106,21 @@ export default function TripPlannerScreen() {
   }, []);
 
   const handleEstimateTrip = async () => {
+    // Handle manual distance input for non-web platforms
+    if (Platform.OS !== 'web') {
+      const distance = parseFloat(manualDistance);
+      if (!distance || distance <= 0) {
+        Alert.alert('Invalid Distance', 'Please enter a valid distance in kilometers.');
+        return;
+      }
+      
+      setEstimatedDistance(distance);
+      setEstimatedTime(distance * 3); // Rough estimate: 3 minutes per km
+      setShowResults(true);
+      return;
+    }
+
+    // Web platform with Google Places
     if (!source.trim() || !destination.trim()) {
       Alert.alert('Missing Information', 'Please enter both source and destination.');
       return;
@@ -140,9 +157,16 @@ export default function TripPlannerScreen() {
   const handleClearTrip = () => {
     setSource('');
     setDestination('');
+    setManualDistance('');
     setEstimatedDistance(0);
     setEstimatedTime(0);
     setShowResults(false);
+  };
+
+  const handleManualDistanceChange = (text: string) => {
+    // Only allow numbers and decimal point
+    const cleanText = text.replace(/[^0-9.]/g, '');
+    setManualDistance(cleanText);
   };
 
   const calculateBreakdownValues = () => {
@@ -176,36 +200,72 @@ export default function TripPlannerScreen() {
           <Text style={styles.subtitle}>Trip Planner</Text>
         </View>
 
-        <View style={styles.formContainer}>
-          <PlaceAutocomplete
-            placeholder="Enter pickup location"
-            value={source}
-            onChangeText={setSource}
-            onPlaceSelect={handleSourceSelect}
-            icon={<MapPin size={20} color="#4CAF50" />}
-            containerStyle={[
-              styles.autocompleteContainer,
-              styles.sourceContainer,
-            ]}
-            zIndex={focusedInput === 'source' ? 99999 : 10000}
-            onFocus={handleSourceFocus}
-            onBlur={handleSourceBlur}
-          />
+        {Platform.OS !== 'web' && (
+          <View style={styles.mobileNotice}>
+            <Text style={styles.mobileNoticeTitle}>📱 Mobile Mode</Text>
+            <Text style={styles.mobileNoticeText}>
+              Enter the trip distance manually to calculate the estimated fare.
+            </Text>
+          </View>
+        )}
 
-          <PlaceAutocomplete
-            placeholder="Enter destination"
-            value={destination}
-            onChangeText={setDestination}
-            onPlaceSelect={handleDestinationSelect}
-            icon={<Navigation size={20} color="#F44336" />}
-            containerStyle={[
-              styles.autocompleteContainer,
-              styles.destinationContainer,
-            ]}
-            zIndex={focusedInput === 'destination' ? 99999 : 10000}
-            onFocus={handleDestinationFocus}
-            onBlur={handleDestinationBlur}
-          />
+        <View style={styles.formContainer}>
+          {Platform.OS === 'web' ? (
+            <>
+              <PlaceAutocomplete
+                placeholder="Enter pickup location"
+                value={source}
+                onChangeText={setSource}
+                onPlaceSelect={handleSourceSelect}
+                icon={<MapPin size={20} color="#4CAF50" />}
+                containerStyle={[
+                  styles.autocompleteContainer,
+                  styles.sourceContainer,
+                ]}
+                zIndex={focusedInput === 'source' ? 99999 : 10000}
+                onFocus={handleSourceFocus}
+                onBlur={handleSourceBlur}
+              />
+
+              <PlaceAutocomplete
+                placeholder="Enter destination"
+                value={destination}
+                onChangeText={setDestination}
+                onPlaceSelect={handleDestinationSelect}
+                icon={<Navigation size={20} color="#F44336" />}
+                containerStyle={[
+                  styles.autocompleteContainer,
+                  styles.destinationContainer,
+                ]}
+                zIndex={focusedInput === 'destination' ? 99999 : 10000}
+                onFocus={handleDestinationFocus}
+                onBlur={handleDestinationBlur}
+              />
+            </>
+          ) : (
+            <View style={styles.manualInputContainer}>
+              <View style={styles.manualInputCard}>
+                <View style={styles.manualInputHeader}>
+                  <MapPin size={20} color="#FF6B35" />
+                  <Text style={styles.manualInputLabel}>Trip Distance</Text>
+                </View>
+                <View style={styles.manualInputRow}>
+                  <TextInput
+                    style={styles.manualInput}
+                    placeholder="Enter distance"
+                    value={manualDistance}
+                    onChangeText={handleManualDistanceChange}
+                    keyboardType="decimal-pad"
+                    placeholderTextColor="#999999"
+                  />
+                  <Text style={styles.manualInputUnit}>km</Text>
+                </View>
+                <Text style={styles.manualInputHint}>
+                  Enter the approximate distance of your trip in kilometers
+                </Text>
+              </View>
+            </View>
+          )}
 
           <View style={styles.buttonContainer}>
             <TouchableOpacity 
@@ -215,7 +275,7 @@ export default function TripPlannerScreen() {
             >
               <Search size={20} color="#FFFFFF" />
               <Text style={styles.buttonText}>
-                {isLoading ? 'Calculating...' : 'Estimate Trip'}
+                {isLoading ? 'Calculating...' : Platform.OS === 'web' ? 'Estimate Trip' : 'Calculate Fare'}
               </Text>
             </TouchableOpacity>
 
@@ -521,5 +581,78 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     color: '#666666',
     marginBottom: 4,
+  },
+  mobileNotice: {
+    backgroundColor: '#E3F2FD',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    borderLeftWidth: 4,
+    borderLeftColor: '#1565C0',
+  },
+  mobileNoticeTitle: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: '#1565C0',
+    marginBottom: 4,
+  },
+  mobileNoticeText: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: '#1565C0',
+  },
+  manualInputContainer: {
+    marginBottom: 16,
+  },
+  manualInputCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  manualInputHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  manualInputLabel: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: '#333333',
+    marginLeft: 8,
+  },
+  manualInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    paddingHorizontal: 12,
+    marginBottom: 8,
+  },
+  manualInput: {
+    flex: 1,
+    fontSize: 18,
+    fontFamily: 'Inter-Regular',
+    color: '#333333',
+    paddingVertical: 16,
+    textAlign: 'center',
+  },
+  manualInputUnit: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: '#666666',
+    marginLeft: 8,
+  },
+  manualInputHint: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: '#666666',
+    textAlign: 'center',
   },
 });
