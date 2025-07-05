@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Platform } from 'react-native';
 
 const GOOGLE_MAPS_API_KEY = 'AIzaSyAguWfPKzzLZrQlPbXWbfzvRYLNM8xwFrk';
 
@@ -30,6 +31,11 @@ export function useGooglePlaces() {
   const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(false);
 
   useEffect(() => {
+    // Only load Google Maps on web platform
+    if (Platform.OS !== 'web') {
+      return;
+    }
+
     // Load Google Maps JavaScript API
     const loadGoogleMaps = () => {
       if (window.google && window.google.maps) {
@@ -60,6 +66,11 @@ export function useGooglePlaces() {
   }, []);
 
   const searchPlaces = async (query: string): Promise<PlaceSuggestion[]> => {
+    if (Platform.OS !== 'web') {
+      console.warn('Google Places search is only available on web platform');
+      return [];
+    }
+
     if (!query.trim() || !isGoogleMapsLoaded) {
       setSuggestions([]);
       return [];
@@ -105,6 +116,11 @@ export function useGooglePlaces() {
   };
 
   const getPlaceCoordinates = async (placeId: string): Promise<{lat: number, lng: number} | null> => {
+    if (Platform.OS !== 'web') {
+      console.warn('Google Places coordinates lookup is only available on web platform');
+      return null;
+    }
+
     if (!isGoogleMapsLoaded) return null;
 
     try {
@@ -137,6 +153,11 @@ export function useGooglePlaces() {
   };
 
   const geocodeAddress = async (address: string): Promise<{lat: number, lng: number} | null> => {
+    if (Platform.OS !== 'web') {
+      console.warn('Google Places geocoding is only available on web platform');
+      return null;
+    }
+
     if (!isGoogleMapsLoaded) return null;
 
     try {
@@ -171,6 +192,11 @@ export function useGooglePlaces() {
     origin: string,
     destination: string
   ): Promise<DistanceResult | null> => {
+    if (Platform.OS !== 'web') {
+      console.warn('Google Places distance calculation is only available on web platform');
+      return null;
+    }
+
     if (!isGoogleMapsLoaded) return null;
 
     try {
