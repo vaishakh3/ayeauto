@@ -1,6 +1,6 @@
 **Aye Auto - Auto Meter App**
 
-![Tempu Auto Rickshaw](https://media.tenor.com/tn5ZXv4ADv4AAAAC/tempu-auto-rickshaw.gif)
+![Tempu Auto Rickshaw](./assets/images/tempu-auto-rickshaw.gif)
 
 Imagine you wanna estimate the cost of a future trip, you input the source and destination and click the button - As simple as that. 
 
