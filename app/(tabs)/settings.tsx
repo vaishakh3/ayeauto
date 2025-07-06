@@ -153,11 +153,12 @@ export default function SettingsScreen() {
           <View style={styles.inputContainer}>
             <Text style={styles.currencySymbol}>₹</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, {outline: 'none'}]}
               value={tempSettings.baseFare.toString()}
               onChangeText={updateBaseFare}
               keyboardType="numeric"
               placeholder="30"
+              selectionColor="#FF6B35"
             />
           </View>
         </View>
@@ -172,11 +173,12 @@ export default function SettingsScreen() {
           </Text>
           <View style={styles.inputContainer}>
             <TextInput
-              style={styles.input}
+              style={[styles.input, {outline: 'none'}]}
               value={tempSettings.baseDistance.toString()}
               onChangeText={updateBaseDistance}
               keyboardType="numeric"
               placeholder="1.5"
+              selectionColor="#FF6B35"
             />
             <Text style={styles.unitSymbol}>km</Text>
           </View>
@@ -193,11 +195,12 @@ export default function SettingsScreen() {
           <View style={styles.inputContainer}>
             <Text style={styles.currencySymbol}>₹</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, {outline: 'none'}]}
               value={tempSettings.ratePerKm.toString()}
               onChangeText={updateRatePerKm}
               keyboardType="numeric"
               placeholder="15"
+              selectionColor="#FF6B35"
             />
             <Text style={styles.unitSymbol}>/km</Text>
           </View>

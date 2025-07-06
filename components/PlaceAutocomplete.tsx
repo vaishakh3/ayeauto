@@ -161,7 +161,7 @@ export default function PlaceAutocomplete({
           {icon}
           <TextInput
             ref={inputRef}
-            style={styles.input}
+            style={[styles.input, {outline: 'none'}]}
             placeholder={placeholder}
             placeholderTextColor="#999999"
             value={value}
@@ -170,6 +170,7 @@ export default function PlaceAutocomplete({
             onBlur={handleInputBlur}
             autoCorrect={false}
             autoCapitalize="words"
+            selectionColor="#FF6B35"
           />
           {isLoading && (
             <ActivityIndicator size="small" color="#FF6B35" style={styles.loader} />

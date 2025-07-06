@@ -28,51 +28,144 @@ export function useLocationTracking() {
 
   const startTracking = async () => {
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        throw new Error('Location permission not granted');
-      }
-
-      // Get initial location
-      const initialLocation = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
+      // Check if we're in web environment
+      const isWeb = typeof window !== 'undefined';
       
-      setCurrentLocation(initialLocation);
-      lastLocationRef.current = initialLocation;
-      setIsTracking(true);
-      setDistanceTraveled(0);
+      if (isWeb && 'geolocation' in navigator) {
+        // Use browser geolocation for web/PWA
+        console.log('Starting web location tracking...');
+        
+        // Get initial location with iOS PWA-friendly settings
+        const initialPosition = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: false,
+            timeout: 15000,
+            maximumAge: 60000 // Allow cached position for iOS PWA
+          });
+        });
 
-      // Start watching location
-      watcherRef.current = await Location.watchPositionAsync(
-        {
-          accuracy: Location.Accuracy.High,
-          timeInterval: 5000, // Update every 5 seconds
-          distanceInterval: 10, // Update every 10 meters
-        },
-        (location) => {
-          setCurrentLocation(location);
-          
-          if (lastLocationRef.current) {
-            const distance = calculateDistance(
-              lastLocationRef.current.coords.latitude,
-              lastLocationRef.current.coords.longitude,
-              location.coords.latitude,
-              location.coords.longitude
-            );
+        const initialLocation = {
+          coords: {
+            latitude: initialPosition.coords.latitude,
+            longitude: initialPosition.coords.longitude,
+            altitude: initialPosition.coords.altitude,
+            accuracy: initialPosition.coords.accuracy,
+            altitudeAccuracy: initialPosition.coords.altitudeAccuracy,
+            heading: initialPosition.coords.heading,
+            speed: initialPosition.coords.speed,
+          },
+          timestamp: initialPosition.timestamp,
+        };
+        
+        setCurrentLocation(initialLocation);
+        lastLocationRef.current = initialLocation;
+        setIsTracking(true);
+        setDistanceTraveled(0);
+        
+        // Start watching location for web
+        const watchId = navigator.geolocation.watchPosition(
+          (position) => {
+            const newLocationObject = {
+              coords: {
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                altitude: position.coords.altitude,
+                accuracy: position.coords.accuracy,
+                altitudeAccuracy: position.coords.altitudeAccuracy,
+                heading: position.coords.heading,
+                speed: position.coords.speed,
+              },
+              timestamp: position.timestamp,
+            };
             
-            // Only add distance if it's significant and reasonable (less than 1km per update)
-            if (distance > 0.01 && distance < 1) {
-              setDistanceTraveled(prev => prev + distance);
+            console.log('New location received:', newLocationObject.coords.latitude, newLocationObject.coords.longitude);
+            setCurrentLocation(newLocationObject);
+            
+            if (lastLocationRef.current) {
+              const distance = calculateDistance(
+                lastLocationRef.current.coords.latitude,
+                lastLocationRef.current.coords.longitude,
+                newLocationObject.coords.latitude,
+                newLocationObject.coords.longitude
+              );
+              
+              console.log('Calculated distance:', distance);
+              
+              // Only add distance if it's significant and reasonable  
+              if (distance > 0.001 && distance < 1) {
+                setDistanceTraveled(prev => {
+                  const newTotal = prev + distance;
+                  console.log('Distance updated:', prev, '+', distance, '=', newTotal);
+                  return newTotal;
+                });
+              }
             }
+            
+            lastLocationRef.current = newLocationObject;
+          },
+          (error) => {
+            console.error('Web location tracking error:', error);
+            setIsTracking(false);
+          },
+          {
+            enableHighAccuracy: false,
+            timeout: 15000,
+            maximumAge: 60000 // iOS PWA-friendly settings
           }
-          
-          lastLocationRef.current = location;
+        );
+        
+        // Store watchId for later cleanup
+        watcherRef.current = { remove: () => navigator.geolocation.clearWatch(watchId) };
+        
+      } else {
+        // Use Expo Location for native
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          throw new Error('Location permission not granted');
         }
-      );
+
+        // Get initial location
+        const initialLocation = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High,
+        });
+        
+        setCurrentLocation(initialLocation);
+        lastLocationRef.current = initialLocation;
+        setIsTracking(true);
+        setDistanceTraveled(0);
+
+        // Start watching location
+        watcherRef.current = await Location.watchPositionAsync(
+          {
+            accuracy: Location.Accuracy.High,
+            timeInterval: 5000, // Update every 5 seconds
+            distanceInterval: 10, // Update every 10 meters
+          },
+          (location) => {
+            setCurrentLocation(location);
+            
+            if (lastLocationRef.current) {
+              const distance = calculateDistance(
+                lastLocationRef.current.coords.latitude,
+                lastLocationRef.current.coords.longitude,
+                location.coords.latitude,
+                location.coords.longitude
+              );
+              
+              // Only add distance if it's significant and reasonable (less than 1km per update)
+              if (distance > 0.01 && distance < 1) {
+                setDistanceTraveled(prev => prev + distance);
+              }
+            }
+            
+            lastLocationRef.current = location;
+          }
+        );
+      }
     } catch (error) {
       console.error('Error starting location tracking:', error);
       setIsTracking(false);
+      throw error; // Re-throw so the caller knows it failed
     }
   };
 
