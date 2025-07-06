@@ -6,7 +6,8 @@ Imagine you wanna estimate the cost of a future trip, you input the source and d
 
 Imagine the driver chettan says that his meter is broken. You step in and run this meter for him :) (U happy, him not so happy maybe)🙂
 
-🚀 LIVE NOW: ayeauto.live (Shoutout to Lalettan for the Logo Cameo 🫡)
+🚀 **LIVE NOW: [ayeauto.live](https://ayeauto.live)**  
+_Shoutout to Lalettan for the Logo Cameo 🫡_
 
 **Features**
 
