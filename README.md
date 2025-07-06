@@ -21,5 +21,12 @@ It is deployed on Firebase. You can use it as a PWA.
 In Android, the Install button should show up if opening in Chrome.
 In IOS, click on share button and Add to Home Screen. 
 
+**Screenshots**
+
+![ha1](https://github.com/user-attachments/assets/6d7af797-ccf3-469a-9ff8-68defce68d0a)
+![aa1](https://github.com/user-attachments/assets/78302b33-e285-4bb3-ac05-809b27212377)
+![aa2](https://github.com/user-attachments/assets/40b7ea1b-e600-4779-8d22-68033dd8da52)
+![aa3](https://github.com/user-attachments/assets/466564f8-5b69-495a-8307-dfcb4f13c37e)
+
 
 
